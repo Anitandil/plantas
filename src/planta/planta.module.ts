@@ -9,4 +9,3 @@ import { OrigenModule } from '../origen/origen.module';
   providers: [PlantaService],
 })
 export class PlantaModule {}
-

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+//import { origen} from './origen.entity';
 import { OrigenController } from './origen.controller';
 import { OrigenService } from './origen.service';
 
@@ -8,4 +9,3 @@ import { OrigenService } from './origen.service';
   exports: [OrigenService],
 })
 export class OrigenModule {}
-

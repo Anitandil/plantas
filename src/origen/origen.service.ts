@@ -6,22 +6,47 @@ export class OrigenService {
   private readonly origenes: Origen[] = [];
   private nextId = 1;
 
-  findOrCreate(continente: string, clima: string): Origen {
-    const existente = this.origenes.find(
-      (o) => o.continente === continente && o.clima === clima,
-    );
-    if (existente) return existente;
+  findAll(): Origen[] {
+    return this.origenes;
+  }
 
-    const origen = new Origen();
-    origen.id = this.nextId++;
-    origen.continente = continente;
-    origen.clima = clima;
-    origen.plantas = [];
+  findOne(id: number): Origen | undefined {
+    return this.origenes.find((o) => o.id === id);
+  }
+
+  create(data: { region: string; clima: string }): Origen {
+    const origen: Origen = {
+      id: this.nextId++,
+      region: data.region,
+      clima: data.clima,
+    };
     this.origenes.push(origen);
     return origen;
   }
 
-  findAll(): Origen[] {
-    return this.origenes;
+  findOrCreate(region: string, clima: string): Origen {
+    const existente = this.origenes.find(
+      (o) => o.region === region && o.clima === clima,
+    );
+    if (existente) return existente;
+    return this.create({ region, clima });
+  }
+
+  update(
+    id: number,
+    data: { region: string; clima: string },
+  ): Origen | undefined {
+    const origen = this.findOne(id);
+    if (!origen) return undefined;
+    if (data.region !== undefined) origen.region = data.region;
+    if (data.clima !== undefined) origen.clima = data.clima;
+    return origen;
+  }
+
+  remove(id: number): boolean {
+    const index = this.origenes.findIndex((o) => o.id === id);
+    if (index === -1) return false;
+    this.origenes.splice(index, 1);
+    return true;
   }
 }
