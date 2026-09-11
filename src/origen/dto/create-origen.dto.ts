@@ -1,4 +1,4 @@
 export class CreateOrigenDto {
-  region: string;
-  clima: string;
+  region!: string;
+  clima!: string;
 }

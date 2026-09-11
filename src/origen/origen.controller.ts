@@ -5,7 +5,6 @@ import {
   Body,
   Delete,
   Param,
-  ParseIntPipe,
   Patch,
 } from '@nestjs/common';
 import { OrigenService } from './origen.service';
@@ -26,14 +25,11 @@ export class OrigenController {
   }
 
   @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() createOrigenDto: CreateOrigenDto,
-  ) {
-    return this.origenService.update(id, createOrigenDto);
+  update(@Param('id') id: string, @Body() createOrigenDto: CreateOrigenDto) {
+    return this.origenService.update(+id, createOrigenDto);
   }
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.origenService.remove(id);
+  remove(@Param('id') id: string) {
+    return this.origenService.remove(+id);
   }
 }

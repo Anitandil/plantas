@@ -1,25 +1,72 @@
 import { Injectable } from '@nestjs/common';
-import { Planta } from './planta.entity';
+import { Planta, Tamanio } from './planta.entity';
 import { OrigenService } from '../origen/origen.service';
 import { CreatePlantaDto } from './dto/create-planta.dto';
+import { QueryPlantaDto } from './dto/query-planta.dto';
 
 @Injectable()
 export class PlantaService {
-  private readonly plantas: Planta[] = [];
-  private nextId = 1;
+  private readonly plantas: Planta[] = [
+    {
+      id: 1,
+      nombreCientifico: 'Ficus benjamina',
+      nombreVulgar: 'Ficus',
+      clasificacion: 'Arbol',
+      tamanio: Tamanio.MEDIANO,
+      epocaFloracion: 'Todo el año',
+      origenId: 1,
+    },
+    {
+      id: 2,
+      nombreCientifico: 'Monstera deliciosa',
+      nombreVulgar: 'Monstera',
+      clasificacion: 'Planta trepadora',
+      tamanio: Tamanio.GRANDE,
+      epocaFloracion: 'Verano',
+      origenId: 2,
+    },
+    {
+      id: 3,
+      nombreCientifico: 'Aloe vera',
+      nombreVulgar: 'Aloe',
+      clasificacion: 'Suculenta',
+      tamanio: Tamanio.PEQUENIO,
+      epocaFloracion: 'Primavera',
+      origenId: 3,
+    },
+  ];
+
+  private nextId = 3;
 
   constructor(private readonly origenService: OrigenService) {}
 
-  findAll(clasificacion?: string): string[] {
-    let plantasFiltradas = this.plantas;
+  findAll(query: QueryPlantaDto): string[] {
+    let result = this.plantas;
 
-    if (clasificacion) {
-      plantasFiltradas = this.plantas.filter(
-        (p) => p.clasificacion === clasificacion,
-      );
+    if (query.clasificacion) {
+      result = result.filter((p) => p.clasificacion === query.clasificacion);
     }
 
-    return plantasFiltradas.map(
+    if (query.tamanio) {
+      result = result.filter((p) => p.tamanio === query.tamanio);
+    }
+
+    if (query.sortBy) {
+      const field = query.sortBy;
+      result.sort((a, b) => {
+        if (a[field] < b[field]) return query.order === 'desc' ? 1 : -1;
+        if (a[field] > b[field]) return query.order === 'desc' ? -1 : 1;
+        return 0;
+      });
+    }
+
+    if (query.page) {
+      const limit = query.limit ?? result.length;
+      const start = (query.page - 1) * limit;
+      result = result.slice(start, start + limit);
+    }
+
+    return result.map(
       (p) => `${p.id}: ${p.nombreVulgar} (${p.nombreCientifico})`,
     );
   }

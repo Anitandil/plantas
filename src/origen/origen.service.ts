@@ -3,7 +3,18 @@ import { Origen } from './origen.entity';
 
 @Injectable()
 export class OrigenService {
-  private readonly origenes: Origen[] = [];
+  private readonly origenes: Origen[] = [
+    {
+      id: 1,
+      region: 'América del Sur',
+      clima: 'Tropical',
+    },
+    {
+      id: 2,
+      region: 'Asia',
+      clima: 'Subtropical',
+    },
+  ];
   private nextId = 1;
 
   findAll(): Origen[] {
@@ -45,8 +56,8 @@ export class OrigenService {
 
   remove(id: number): boolean {
     const index = this.origenes.findIndex((o) => o.id === id);
-    if (index === -1) return false;
-    this.origenes.splice(index, 1);
+    if (index === -1) return false; //ponermensaje d q no exist el indice
+    this.origenes.splice(index, 1); //desplaza el array para eliminar el elemento en el índice especificado
     return true;
   }
 }

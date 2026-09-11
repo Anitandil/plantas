@@ -1,9 +1,15 @@
+export enum Tamanio {
+  PEQUENIO = 'Pequeño',
+  MEDIANO = 'Mediano',
+  GRANDE = 'Grande',
+}
+
 export class Planta {
   id!: number;
   nombreCientifico!: string;
   nombreVulgar!: string;
   clasificacion!: string;
-  tamanio!: string;
-  epocaFloracion?: string; //pude ser strin o undefined porque no es un campo obligatorio
+  tamanio!: Tamanio;
+  epocaFloracion?: string;
   origenId!: number;
 }
