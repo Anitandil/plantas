@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Planta, Tamanio } from './planta.entity';
 import { OrigenService } from '../origen/origen.service';
 import { CreatePlantaDto } from './dto/create-planta.dto';
@@ -35,10 +40,16 @@ export class PlantaService {
       origenId: 3,
     },
   ];
-
   private nextId = 3;
 
-  constructor(private readonly origenService: OrigenService) {}
+  constructor(
+    @Inject(forwardRef(() => OrigenService))
+    private readonly origenService: OrigenService,
+  ) {}
+
+  existsByOrigenId(origenId: number): boolean {
+    return this.plantas.some((planta) => planta.origenId === origenId);
+  }
 
   findAll(query: QueryPlantaDto): string[] {
     let result = this.plantas;
@@ -71,15 +82,16 @@ export class PlantaService {
     );
   }
 
-  findOne(id: number): Planta | undefined {
-    return this.plantas.find((p) => p.id === id);
+  findOne(id: number): Planta {
+    const planta = this.plantas.find((p) => p.id === id);
+    if (!planta) {
+      throw new NotFoundException(`La planta con ID ${id} no existe.`);
+    }
+    return planta;
   }
 
   create(data: CreatePlantaDto): Planta {
-    const origen = this.origenService.findOne(data.origenId);
-    if (!origen) {
-      throw new Error('Origen no encontrado');
-    }
+    this.origenService.findOne(data.origenId);
     const planta: Planta = {
       id: this.nextId++,
       nombreCientifico: data.nombreCientifico ?? '',
@@ -93,15 +105,11 @@ export class PlantaService {
     return planta;
   }
 
-  update(id: number, data: Partial<CreatePlantaDto>): Planta | undefined {
+  update(id: number, data: Partial<CreatePlantaDto>): Planta {
     const planta = this.findOne(id);
-    if (!planta) return undefined;
 
     if (data.origenId !== undefined) {
-      const origen = this.origenService.findOne(data.origenId);
-      if (!origen) {
-        throw new Error('Origen no encontrado');
-      }
+      this.origenService.findOne(data.origenId);
       planta.origenId = data.origenId;
     }
 
@@ -120,7 +128,9 @@ export class PlantaService {
 
   remove(id: number): boolean {
     const index = this.plantas.findIndex((p) => p.id === id);
-    if (index === -1) return false;
+    if (index === -1) {
+      throw new NotFoundException(`La planta con ID ${id} no existe.`);
+    }
     this.plantas.splice(index, 1);
     return true;
   }
