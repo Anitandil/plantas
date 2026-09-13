@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   forwardRef,
   Inject,
   Injectable,
@@ -91,14 +92,28 @@ export class PlantaService {
   }
 
   create(data: CreatePlantaDto): Planta {
+    const nombreCientifico = data.nombreCientifico?.trim();
+    const nombreVulgar = data.nombreVulgar?.trim();
+    const clasificacion = data.clasificacion?.trim();
+
+    if (!nombreCientifico || !nombreVulgar || !clasificacion) {
+      throw new BadRequestException(
+        'Los campos nombre científico, nombre vulgar y clasificación no pueden estar vacíos.',
+      );
+    }
+
+    if (!Object.values(Tamanio).includes(data.tamanio)) {
+      throw new BadRequestException('El tamaño no es válido.');
+    }
+
     this.origenService.findOne(data.origenId);
     const planta: Planta = {
       id: this.nextId++,
-      nombreCientifico: data.nombreCientifico ?? '',
-      nombreVulgar: data.nombreVulgar ?? '',
-      clasificacion: data.clasificacion ?? '',
-      tamanio: data.tamanio ?? '',
-      epocaFloracion: data.epocaFloracion,
+      nombreCientifico,
+      nombreVulgar,
+      clasificacion,
+      tamanio: data.tamanio,
+      epocaFloracion: data.epocaFloracion?.trim() || undefined,
       origenId: data.origenId,
     };
     this.plantas.push(planta);
@@ -113,15 +128,42 @@ export class PlantaService {
       planta.origenId = data.origenId;
     }
 
-    if (data.nombreCientifico !== undefined)
-      planta.nombreCientifico = data.nombreCientifico;
-    if (data.nombreVulgar !== undefined)
-      planta.nombreVulgar = data.nombreVulgar;
-    if (data.clasificacion !== undefined)
-      planta.clasificacion = data.clasificacion;
-    if (data.tamanio !== undefined) planta.tamanio = data.tamanio;
-    if (data.epocaFloracion !== undefined)
-      planta.epocaFloracion = data.epocaFloracion;
+    if (data.nombreCientifico !== undefined) {
+      const nombreCientifico = data.nombreCientifico.trim();
+      if (!nombreCientifico) {
+        throw new BadRequestException(
+          'El nombre científico no puede estar vacío.',
+        );
+      }
+      planta.nombreCientifico = nombreCientifico;
+    }
+
+    if (data.nombreVulgar !== undefined) {
+      const nombreVulgar = data.nombreVulgar.trim();
+      if (!nombreVulgar) {
+        throw new BadRequestException('El nombre vulgar no puede estar vacío.');
+      }
+      planta.nombreVulgar = nombreVulgar;
+    }
+
+    if (data.clasificacion !== undefined) {
+      const clasificacion = data.clasificacion.trim();
+      if (!clasificacion) {
+        throw new BadRequestException('La clasificación no puede estar vacía.');
+      }
+      planta.clasificacion = clasificacion;
+    }
+
+    if (data.tamanio !== undefined) {
+      if (!Object.values(Tamanio).includes(data.tamanio)) {
+        throw new BadRequestException('El tamaño no es válido.');
+      }
+      planta.tamanio = data.tamanio;
+    }
+
+    if (data.epocaFloracion !== undefined) {
+      planta.epocaFloracion = data.epocaFloracion.trim() || undefined;
+    }
 
     return planta;
   }

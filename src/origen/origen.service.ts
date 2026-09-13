@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   forwardRef,
   Inject,
@@ -18,15 +19,25 @@ export class OrigenService {
     {
       id: 1,
       region: 'América del Sur',
-      clima: 'Tropical',
+      clima: 'Subtropical',
     },
     {
       id: 2,
       region: 'Asia',
       clima: 'Subtropical',
     },
+    {
+      id: 3,
+      region: 'America del Sur',
+      clima: 'Templado',
+    },
+    {
+      id: 4,
+      region: 'America Central',
+      clima: 'Tropical',
+    },
   ];
-  private nextId = 3;
+  private nextId = 5;
 
   findAll(): Origen[] {
     return this.origenes;
@@ -41,19 +52,28 @@ export class OrigenService {
   }
 
   create(data: { region: string; clima: string }): Origen {
+    const region = data.region?.trim();
+    const clima = data.clima?.trim();
+
+    if (!region || !clima) {
+      throw new BadRequestException(
+        'Los campos región y clima no pueden estar vacíos.',
+      );
+    }
+
     const existente = this.origenes.find(
-      (o) => o.region === data.region && o.clima === data.clima,
+      (o) => o.region === region && o.clima === clima,
     );
     if (existente) {
       throw new ConflictException(
-        `El origen con región ${data.region} y clima ${data.clima} ya existe.`,
+        `El origen con región ${region} y clima ${clima} ya existe.`,
       );
     }
 
     const origen: Origen = {
       id: this.nextId++,
-      region: data.region,
-      clima: data.clima,
+      region,
+      clima,
     };
     this.origenes.push(origen);
     return origen;
@@ -65,13 +85,6 @@ export class OrigenService {
     );
     if (existente) return existente;
     return this.create({ region, clima });
-  }
-
-  update(id: number, data: { region: string; clima: string }): Origen {
-    const origen = this.findOne(id);
-    if (data.region !== undefined) origen.region = data.region;
-    if (data.clima !== undefined) origen.clima = data.clima;
-    return origen;
   }
 
   remove(id: number): boolean {
