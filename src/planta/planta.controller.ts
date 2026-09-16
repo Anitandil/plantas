@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { PlantaService } from './planta.service';
 import { CreatePlantaDto } from './dto/create-planta.dto';
@@ -23,8 +24,8 @@ export class PlantaController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.plantaService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.plantaService.findOne(id);
   }
 
   @Post()
@@ -33,13 +34,15 @@ export class PlantaController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePlantaDto: UpdatePlantaDto) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    return this.plantaService.update(+id, updatePlantaDto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updatePlantaDto: UpdatePlantaDto,
+  ) {
+    return this.plantaService.update(id, updatePlantaDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.plantaService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.plantaService.remove(id);
   }
 }

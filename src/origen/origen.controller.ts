@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Delete, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Delete,
+  Param,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { OrigenService } from './origen.service';
 import { CreateOrigenDto } from './dto/create-origen.dto';
 
@@ -12,8 +20,8 @@ export class OrigenController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.origenService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.origenService.findOne(id);
   }
   @Post()
   create(@Body() createOrigenDto: CreateOrigenDto) {
@@ -21,7 +29,7 @@ export class OrigenController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.origenService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.origenService.remove(id);
   }
 }
