@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { PlantaService } from './planta.service';
 import { CreatePlantaDto } from './dto/create-planta.dto';
+import { UpdatePlantaDto } from './dto/update-planta.dto';
 import { QueryPlantaDto } from './dto/query-planta.dto';
 
 @Controller('planta') //'planta' es la ruta base para todas las rutas de este controlador
@@ -32,8 +33,9 @@ export class PlantaController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() createPlantaDto: CreatePlantaDto) {
-    return this.plantaService.update(+id, createPlantaDto);
+  update(@Param('id') id: string, @Body() updatePlantaDto: UpdatePlantaDto) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    return this.plantaService.update(+id, updatePlantaDto);
   }
 
   @Delete(':id')

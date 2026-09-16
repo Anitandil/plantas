@@ -8,6 +8,7 @@ import {
 import { Planta, Tamanio } from './planta.entity';
 import { OrigenService } from '../origen/origen.service';
 import { CreatePlantaDto } from './dto/create-planta.dto';
+import { UpdatePlantaDto } from './dto/update-planta.dto';
 import { QueryPlantaDto } from './dto/query-planta.dto';
 
 @Injectable()
@@ -120,7 +121,7 @@ export class PlantaService {
     return planta;
   }
 
-  update(id: number, data: Partial<CreatePlantaDto>): Planta {
+  update(id: number, data: UpdatePlantaDto): Planta {
     const planta = this.findOne(id);
 
     if (data.origenId !== undefined) {
