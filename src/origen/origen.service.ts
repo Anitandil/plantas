@@ -87,7 +87,7 @@ export class OrigenService {
     return this.create({ region, clima });
   }
 
-  remove(id: number): boolean {
+  remove(id: number): string {
     this.findOne(id);
 
     if (this.plantaService.existsByOrigenId(id)) {
@@ -98,6 +98,6 @@ export class OrigenService {
 
     const index = this.origenes.findIndex((o) => o.id === id);
     this.origenes.splice(index, 1); //desplaza el array para eliminar el elemento en el índice especificado
-    return true;
+    return `El origen con ID ${id} fue eliminado correctamente.`;
   }
 }

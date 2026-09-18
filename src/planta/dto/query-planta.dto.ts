@@ -1,8 +1,19 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { Tamanio } from '../planta.entity';
 
 export class QueryPlantaDto {
+  @IsOptional()
+  @IsString()
+  nombre?: string;
+
   @IsOptional()
   @IsString()
   clasificacion?: string;
@@ -12,7 +23,15 @@ export class QueryPlantaDto {
   tamanio?: Tamanio;
 
   @IsOptional()
-  @IsIn(['id', 'nombreCientifico', 'nombreVulgar', 'clasificacion', 'tamanio', 'epocaFloracion', 'origenId'])
+  @IsIn([
+    'id',
+    'nombreCientifico',
+    'nombreVulgar',
+    'clasificacion',
+    'tamanio',
+    'epocaFloracion',
+    'origenId',
+  ])
   sortBy?: string;
 
   @IsOptional()

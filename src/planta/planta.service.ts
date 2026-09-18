@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   forwardRef,
   Inject,
   Injectable,
@@ -42,7 +43,7 @@ export class PlantaService {
       origenId: 3,
     },
   ];
-  private nextId = 3;
+  private nextId = 4;
 
   constructor(
     @Inject(forwardRef(() => OrigenService))
@@ -55,9 +56,22 @@ export class PlantaService {
 
   findAll(query: QueryPlantaDto): string[] {
     let result = this.plantas;
+    const nombre = query.nombre?.trim().toLowerCase();
 
-    if (query.clasificacion) {
-      result = result.filter((p) => p.clasificacion === query.clasificacion);
+    if (nombre) {
+      result = result.filter(
+        (p) =>
+          p.nombreCientifico.toLowerCase().includes(nombre) ||
+          p.nombreVulgar.toLowerCase().includes(nombre),
+      );
+    }
+
+    const clasificacion = query.clasificacion?.trim().toLowerCase();
+
+    if (clasificacion) {
+      result = result.filter(
+        (p) => p.clasificacion.toLowerCase() === clasificacion,
+      );
     }
 
     if (query.tamanio) {
@@ -100,6 +114,16 @@ export class PlantaService {
     if (!nombreCientifico || !nombreVulgar || !clasificacion) {
       throw new BadRequestException(
         'Los campos nombre científico, nombre vulgar y clasificación no pueden estar vacíos.',
+      );
+    }
+
+    if (
+      this.plantas.some(
+        (planta) => planta.nombreCientifico === nombreCientifico,
+      )
+    ) {
+      throw new ConflictException(
+        `La planta con nombre científico ${nombreCientifico} ya existe.`,
       );
     }
 
@@ -169,12 +193,16 @@ export class PlantaService {
     return planta;
   }
 
-  remove(id: number): boolean {
+  remove(id: number): { message: string; planta: Planta } {
     const index = this.plantas.findIndex((p) => p.id === id);
     if (index === -1) {
       throw new NotFoundException(`La planta con ID ${id} no existe.`);
     }
+    const planta = this.plantas[index];
     this.plantas.splice(index, 1);
-    return true;
+    return {
+      message: `La planta con ID ${id} fue eliminada correctamente.`,
+      planta,
+    };
   }
 }
