@@ -1,0 +1,10 @@
+$kind: http-request
+name: Ordenar plantas
+url: '{{baseUrl}}/planta'
+method: GET
+queryParams:
+  - key: sortBy
+    value: nombreCientifico
+  - key: order
+    value: asc
+order: 7000000000000

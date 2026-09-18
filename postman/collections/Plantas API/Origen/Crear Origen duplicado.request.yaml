@@ -1,0 +1,16 @@
+$kind: http-request
+url: '{{baseUrl}}/Origen'
+method: POST
+headers:
+  - key: Content-Type
+    value: '{{contentType}}'
+body:
+  type: json
+  content: "{\r
+
+    \  \"region\": \"Europa\",\r
+
+    \  \"clima\": \"Templado\"\r
+
+    }"
+order: 4438312684162040

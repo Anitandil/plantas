@@ -1,0 +1,5 @@
+$kind: http-request
+name: Buscar planta por ID
+url: '{{baseUrl}}/planta/{{plantaId}}'
+method: GET
+order: 2000000000000

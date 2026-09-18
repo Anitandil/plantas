@@ -1,0 +1,7 @@
+$kind: http-request
+name: Filtrar por clasificación
+url: "{{baseUrl}}/planta?clasificacion=Arbol"
+method: GET
+queryParams:
+  clasificacion: Arbol
+order: 4000000000000

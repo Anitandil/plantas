@@ -1,0 +1,19 @@
+$kind: http-request
+name: Crear planta
+url: '{{baseUrl}}/planta'
+method: POST
+headers:
+  - key: Content-Type
+    value: '{{contentType}}'
+body:
+  type: json
+  content: |-
+    {
+      "nombreCientifico": "Rosa canina",
+      "nombreVulgar": "Rosal silvestre",
+      "clasificacion": "arbustiva",
+      "tamanio": "MEDIANO",
+      "epocaFloracion": "primavera",
+      "origenId": 1
+    }
+order: 9000000000000

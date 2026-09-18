@@ -1,0 +1,10 @@
+$kind: http-request
+name: Combinar filtros
+url: '{{baseUrl}}/planta'
+method: GET
+queryParams:
+  - key: clasificacion
+    value: arbustiva
+  - key: tamanio
+    value: MEDIANO
+order: 6000000000000

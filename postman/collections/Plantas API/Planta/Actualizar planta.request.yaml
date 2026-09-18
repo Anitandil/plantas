@@ -1,0 +1,12 @@
+$kind: http-request
+url: "{{baseUrl}}/planta/{{plantaId}}"
+method: PATCH
+headers:
+  Content-Type: "{{contentType}}"
+body:
+  type: json
+  content: |-
+    {
+      "nombreVulgar": "Rosa silvestre"
+    }
+order: 10000000000000

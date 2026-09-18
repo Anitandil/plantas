@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{baseUrl}}/Origen"
+method: GET
+order: 1789734207258

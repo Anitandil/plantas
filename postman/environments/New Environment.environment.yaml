@@ -1,0 +1,10 @@
+name: New Environment
+values:
+  - key: baseUrl
+    value: 'http://localhost:3000'
+  - key: origenId
+    value: '1'
+  - key: plantaId
+    value: '1'
+  - key: contentType
+    value: 'application/json'

@@ -1,0 +1,5 @@
+$kind: http-request
+name: Listar todas las plantas
+url: '{{baseUrl}}/planta'
+method: GET
+order: 1000000000000

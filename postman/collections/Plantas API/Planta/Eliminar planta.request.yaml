@@ -1,0 +1,5 @@
+$kind: http-request
+name: Eliminar planta
+url: '{{baseUrl}}/planta/{{plantaId}}'
+method: DELETE
+order: 11000000000000

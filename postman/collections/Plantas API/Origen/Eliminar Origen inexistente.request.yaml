@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{baseUrl}}/Origen/999"
+method: DELETE
+order: 4492366703531930

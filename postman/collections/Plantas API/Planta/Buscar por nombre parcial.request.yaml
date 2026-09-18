@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/planta?nombre=alo"
+method: GET
+queryParams:
+  nombre: alo
+order: 3000000000000
