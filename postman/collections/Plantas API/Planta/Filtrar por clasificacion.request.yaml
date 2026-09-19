@@ -1,7 +1,8 @@
 $kind: http-request
 name: Filtrar por clasificación
-url: "{{baseUrl}}/planta?clasificacion=Arbol"
+url: '{{baseUrl}}/planta'
 method: GET
 queryParams:
-  clasificacion: Arbol
+  - key: clasificacion
+    value: Arbol
 order: 4000000000000

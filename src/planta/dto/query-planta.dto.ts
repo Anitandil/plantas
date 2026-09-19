@@ -7,7 +7,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import { Tamanio } from '../planta.entity';
+import { Tipo } from '../planta.entity';
 
 export class QueryPlantaDto {
   @IsOptional()
@@ -15,12 +15,8 @@ export class QueryPlantaDto {
   nombre?: string;
 
   @IsOptional()
-  @IsString()
-  clasificacion?: string;
-
-  @IsOptional()
-  @IsEnum(Tamanio)
-  tamanio?: Tamanio;
+  @IsEnum(Tipo)
+  clasificacion?: Tipo;
 
   @IsOptional()
   @IsIn([
@@ -28,7 +24,6 @@ export class QueryPlantaDto {
     'nombreCientifico',
     'nombreVulgar',
     'clasificacion',
-    'tamanio',
     'epocaFloracion',
     'origenId',
   ])

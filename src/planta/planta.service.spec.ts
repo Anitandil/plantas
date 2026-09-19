@@ -28,7 +28,6 @@ describe('PlantaService', () => {
         nombreCientifico: 'Ficus benjamina',
         nombreVulgar: 'Ficus',
         clasificacion: 'Arbol',
-        tamanio: 'Mediano',
         epocaFloracion: 'Todo el año',
         origenId: 1,
       },
@@ -42,7 +41,6 @@ describe('PlantaService', () => {
         nombreCientifico: 'Ficus benjamina',
         nombreVulgar: 'Ficus nuevo',
         clasificacion: 'Arbol',
-        tamanio: 'Mediano',
         origenId: 1,
       }),
     ).toThrow('La planta con nombre científico Ficus benjamina ya existe.');
@@ -60,4 +58,3 @@ describe('PlantaService', () => {
     ]);
   });
 });
-

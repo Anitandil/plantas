@@ -6,52 +6,33 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Origen } from './origen.entity';
 import { PlantaService } from '../planta/planta.service';
 
 @Injectable()
 export class OrigenService {
   constructor(
+    @InjectRepository(Origen)
+    private origenRepository: Repository<Origen>,
     @Inject(forwardRef(() => PlantaService))
     private readonly plantaService: PlantaService,
   ) {}
-  private readonly origenes: Origen[] = [
-    {
-      id: 1,
-      region: 'América del Sur',
-      clima: 'Subtropical',
-    },
-    {
-      id: 2,
-      region: 'Asia',
-      clima: 'Subtropical',
-    },
-    {
-      id: 3,
-      region: 'America del Sur',
-      clima: 'Templado',
-    },
-    {
-      id: 4,
-      region: 'America Central',
-      clima: 'Tropical',
-    },
-  ];
-  private nextId = 5;
 
-  findAll(): Origen[] {
-    return this.origenes;
+  findAll(): Promise<Origen[]> {
+    return this.origenRepository.find();
   }
 
-  findOne(id: number): Origen {
-    const origen = this.origenes.find((o) => o.id === id);
+  async findOne(id: number): Promise<Origen> {
+    const origen = await this.origenRepository.findOneBy({ id });
     if (!origen) {
       throw new NotFoundException(`El origen con ID ${id} no existe.`);
     }
     return origen;
   }
 
-  create(data: { region: string; clima: string }): Origen {
+  async create(data: { region: string; clima: string }): Promise<Origen> {
     const region = data.region?.trim();
     const clima = data.clima?.trim();
 
@@ -61,43 +42,42 @@ export class OrigenService {
       );
     }
 
-    const existente = this.origenes.find(
-      (o) => o.region === region && o.clima === clima,
-    );
+    const existente = await this.origenRepository.findOneBy({
+      region,
+      clima,
+    });
     if (existente) {
       throw new ConflictException(
         `El origen con región ${region} y clima ${clima} ya existe.`,
       );
     }
 
-    const origen: Origen = {
-      id: this.nextId++,
-      region,
-      clima,
-    };
-    this.origenes.push(origen);
-    return origen;
+    const origen = this.origenRepository.create({ region, clima });
+    return this.origenRepository.save(origen);
   }
 
-  findOrCreate(region: string, clima: string): Origen {
-    const existente = this.origenes.find(
-      (o) => o.region === region && o.clima === clima,
-    );
+  async findOrCreate(region: string, clima: string): Promise<Origen> {
+    const existente = await this.origenRepository.findOneBy({
+      region,
+      clima,
+    });
     if (existente) return existente;
     return this.create({ region, clima });
   }
 
-  remove(id: number): string {
-    this.findOne(id);
+  async remove(id: number): Promise<{ message: string; origen: Origen }> {
+    const origen = await this.findOne(id);
 
-    if (this.plantaService.existsByOrigenId(id)) {
+    if (await this.plantaService.existsByOrigenId(id)) {
       throw new ConflictException(
         `No se puede eliminar el origen con ID ${id} porque tiene plantas asociadas.`,
       );
     }
 
-    const index = this.origenes.findIndex((o) => o.id === id);
-    this.origenes.splice(index, 1); //desplaza el array para eliminar el elemento en el índice especificado
-    return `El origen con ID ${id} fue eliminado correctamente.`;
+    await this.origenRepository.delete(id);
+    return {
+      message: `El origen con ID ${id} fue eliminado correctamente.`,
+      origen,
+    };
   }
 }

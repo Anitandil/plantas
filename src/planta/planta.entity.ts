@@ -1,15 +1,40 @@
-export enum Tamanio {
-  PEQUENIO = 'Pequeño',
-  MEDIANO = 'Mediano',
-  GRANDE = 'Grande',
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Origen } from '../origen/origen.entity';
+
+export enum Tipo {
+  ARBOL = 'Arbol',
+  ARBUSTO = 'Arbusto',
+  MATA = 'Mata',
+  HIERBA = 'Hierba',
 }
 
+@Entity()
 export class Planta {
+  @PrimaryGeneratedColumn()
   id!: number;
+
+  @Column()
   nombreCientifico!: string;
+
+  @Column()
   nombreVulgar!: string;
-  clasificacion!: string;
-  tamanio!: Tamanio;
+
+  @Column()
+  clasificacion!: Tipo;
+
+  @Column({ nullable: true })
   epocaFloracion?: string;
+
+  @Column()
   origenId!: number;
+
+  @ManyToOne(() => Origen)
+  @JoinColumn({ name: 'origenId' })
+  origen?: Origen;
 }

@@ -11,8 +11,7 @@ body:
     {
       "nombreCientifico": "Rosa canina",
       "nombreVulgar": "Rosal silvestre",
-      "clasificacion": "arbustiva",
-      "tamanio": "MEDIANO",
+      "clasificacion": "Arbusto",
       "epocaFloracion": "primavera",
       "origenId": 1
     }
