@@ -28,13 +28,12 @@ La consulta es generica y sus parametros son opcionales.
 GET {{baseUrl}}/planta
 GET {{baseUrl}}/planta?nombre=fic
 GET {{baseUrl}}/planta?clasificacion=Arbol
-GET {{baseUrl}}/planta?tamanio=Mediano
-GET {{baseUrl}}/planta?nombre=fic&tamanio=Mediano
+GET {{baseUrl}}/planta?nombre=fic&clasificacion=Arbol
 GET {{baseUrl}}/planta?sortBy=nombreCientifico&order=asc
 GET {{baseUrl}}/planta?page=1&limit=2
 ```
 
-`nombre` busca coincidencias parciales en el nombre cientifico y vulgar sin distinguir mayusculas y minusculas. Los filtros combinados se aplican simultaneamente.
+`nombre` busca coincidencias parciales en el nombre cientifico y vulgar sin distinguir mayusculas y minusculas. `nombre` y `clasificacion` pueden combinarse, junto con la ordenacion y la paginacion.
 
 ### Crear una planta
 
@@ -47,13 +46,12 @@ POST {{baseUrl}}/planta
   "nombreCientifico": "Rosa gallica",
   "nombreVulgar": "Rosa",
   "clasificacion": "Arbusto",
-  "tamanio": "Mediano",
   "epocaFloracion": "Primavera",
   "origenId": 1
 }
 ```
 
-Todos los campos son obligatorios excepto `epocaFloracion`. Se comprueba que el origen exista y que no se repita el nombre cientifico.
+Todos los campos son obligatorios excepto `epocaFloracion`. Se comprueba que el origen exista.
 
 ### Actualizar una planta
 
@@ -120,7 +118,6 @@ Las validaciones se definen en los DTO mediante `class-validator`.
 ### CreatePlantaDto
 
 - `nombreCientifico`, `nombreVulgar` y `clasificacion`: texto y no vacios.
-- `tamanio`: debe ser `Pequeno`, `Mediano` o `Grande`.
 - `epocaFloracion`: texto opcional.
 - `origenId`: numero entero y obligatorio.
 
@@ -138,9 +135,8 @@ Es parcial mediante `PartialType`. Todos los campos son opcionales, pero si se e
 - ID inexistente: `404 Not Found`.
 - ID no numerico, por ejemplo `/planta/abc`: `400 Bad Request`.
 - Campo obligatorio vacio: `400 Bad Request`.
-- Tamano invalido: `400 Bad Request`.
+- Clasificacion invalida: `400 Bad Request`.
 - Campo no declarado en el DTO: `400 Bad Request`.
-- Nombre cientifico repetido: `409 Conflict`.
 - Origen repetido: `409 Conflict`.
 - Origen con plantas asociadas: `409 Conflict`.
 
@@ -197,11 +193,10 @@ Plantas
   Listar plantas
   Buscar planta por ID
   Buscar por nombre parcial
-  Filtrar por tamano
+  Filtrar por clasificacion
   Combinar filtros
   Ordenar y paginar
   Crear planta
-  Crear planta duplicada
   Actualizar planta
   Eliminar planta
 
@@ -216,8 +211,8 @@ Origenes
 Validaciones
   ID invalido
   Campo vacio
-  Tamano invalido
+  Clasificacion invalida
   Campo desconocido
 ```
 
-Los datos se almacenan en memoria. Al reiniciar el servidor, vuelven los datos iniciales y las eliminaciones o creaciones realizadas durante la ejecucion se pierden.
+Los datos se almacenan en PostgreSQL mediante TypeORM. La conexion se configura con las variables de entorno usadas por `app.module.ts` y los datos permanecen despues de reiniciar el servidor.

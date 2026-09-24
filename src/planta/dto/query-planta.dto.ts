@@ -7,7 +7,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import { Tipo } from '../planta.entity';
+import { Clasificacion } from '../planta.entity';
 
 export class QueryPlantaDto {
   @IsOptional()
@@ -15,8 +15,8 @@ export class QueryPlantaDto {
   nombre?: string;
 
   @IsOptional()
-  @IsEnum(Tipo)
-  clasificacion?: Tipo;
+  @IsEnum(Clasificacion)
+  clasificacion?: Clasificacion;
 
   @IsOptional()
   @IsIn([
@@ -44,4 +44,8 @@ export class QueryPlantaDto {
   @IsInt()
   @Min(1)
   limit?: number;
+
+  @IsOptional()
+  @IsIn(['short', 'full'])
+  format?: 'short' | 'full';
 }

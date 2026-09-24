@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { Planta } from './planta.entity';
 import { OrigenService } from '../origen/origen.service';
 import { CreatePlantaDto } from './dto/create-planta.dto';
@@ -27,35 +27,78 @@ export class PlantaService {
     return count > 0;
   }
 
-  async findAll(query: QueryPlantaDto): Promise<Planta[]> {
-    if (query.nombre) {
-      const plantas = await this.plantaRepository.find({
-        relations: { origen: true },
-      });
-      const nombre = query.nombre.trim().toLowerCase();
-      return plantas.filter(
-        (p) =>
-          p.nombreCientifico.toLowerCase().includes(nombre) ||
-          p.nombreVulgar.toLowerCase().includes(nombre),
+  async findAll(query: QueryPlantaDto) {
+    //query contiene los parametros enviados en la url
+    //ej planta?nombre=ficus&clasificacion=Arbol&page=1&limit=10&format=short&sortBy=nombreCientifico&order=asc
+    const formatData = (data: Planta[]) => {
+      //define el formato de salida
+      if (query.format === 'short') {
+        return data.map(
+          (p) => `${p.id}: ${p.nombreVulgar} (${p.nombreCientifico})`,
+        );
+      }
+      return data;
+    };
+
+    const page = query.page ?? 1; //define valores predeterminados
+    const limit = query.limit ?? 10; //si no se envia page usa1, si no se envia limit usa 10
+    const queryBuilder = this.plantaRepository //crea la conulta con el query builder de TypeORM
+      .createQueryBuilder('planta') //plnat es un lias para la tabla planta
+      .leftJoinAndSelect('planta.origen', 'origen'); //une la tabla origen con la tabla planta y selecciona todos los campos de origen
+
+    const nombre = query.nombre?.trim(); //filtra por nombre si se pide
+    if (nombre) {
+      //solo si el nombre no esta vacio
+      queryBuilder.andWhere(
+        new Brackets((builder) => {
+          builder
+            .where('LOWER(planta.nombreCientifico) LIKE LOWER(:nombre)', {
+              nombre: `%${nombre}%`,
+            })
+            .orWhere('LOWER(planta.nombreVulgar) LIKE LOWER(:nombre)', {
+              nombre: `%${nombre}%`,
+            });
+        }),
       );
     }
 
-    const where: FindOptionsWhere<Planta> = {};
-
     if (query.clasificacion) {
-      where.clasificacion = query.clasificacion;
+      //filtra x clasificacion
+      queryBuilder.andWhere('planta.clasificacion = :clasificacion', {
+        clasificacion: query.clasificacion,
+      });
     }
 
-    const order: Record<string, 'ASC' | 'DESC'> = {};
+    const sortableFields: Record<string, string> = {
+      //define los campos ordenables
+      id: 'planta.id',
+      nombreCientifico: 'planta.nombreCientifico',
+      nombreVulgar: 'planta.nombreVulgar',
+      clasificacion: 'planta.clasificacion',
+      epocaFloracion: 'planta.epocaFloracion',
+      origenId: 'planta.origenId',
+    };
     if (query.sortBy) {
-      order[query.sortBy] = query.order === 'desc' ? 'DESC' : 'ASC';
+      queryBuilder.orderBy(
+        sortableFields[query.sortBy],
+        query.order === 'desc' ? 'DESC' : 'ASC',
+      );
     }
 
-    return this.plantaRepository.find({
-      where,
-      relations: { origen: true },
-      order: Object.keys(order).length ? order : undefined,
-    });
+    queryBuilder //crea laconsulta
+      .addOrderBy('planta.id', 'ASC') //agrega orden secundario
+      .skip((page - 1) * limit) //paginacion
+      .take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data: formatData(data),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: number): Promise<Planta> {

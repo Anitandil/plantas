@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { Origen } from '../origen/origen.entity';
 
-export enum Tipo {
+export enum Clasificacion {
   ARBOL = 'Arbol',
   ARBUSTO = 'Arbusto',
   MATA = 'Mata',
@@ -26,7 +26,7 @@ export class Planta {
   nombreVulgar!: string;
 
   @Column()
-  clasificacion!: Tipo;
+  clasificacion!: Clasificacion;
 
   @Column({ nullable: true })
   epocaFloracion?: string;

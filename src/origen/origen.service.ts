@@ -57,12 +57,18 @@ export class OrigenService {
   }
 
   async findOrCreate(region: string, clima: string): Promise<Origen> {
+    const regionNormalizada = region.trim();
+    const climaNormalizado = clima.trim();
+
     const existente = await this.origenRepository.findOneBy({
-      region,
-      clima,
+      region: regionNormalizada,
+      clima: climaNormalizado,
     });
     if (existente) return existente;
-    return this.create({ region, clima });
+    return this.create({
+      region: regionNormalizada,
+      clima: climaNormalizado,
+    });
   }
 
   async remove(id: number): Promise<{ message: string; origen: Origen }> {
