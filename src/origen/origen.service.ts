@@ -10,6 +10,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Origen } from './origen.entity';
 import { PlantaService } from '../planta/planta.service';
+import { CreateOrigenDto } from './dto/create-origen.dto';
+import { UpdateOrigenDto } from './dto/update-origen.dto';
 
 @Injectable()
 export class OrigenService {
@@ -32,7 +34,7 @@ export class OrigenService {
     return origen;
   }
 
-  async create(data: { region: string; clima: string }): Promise<Origen> {
+  async create(data: CreateOrigenDto): Promise<Origen> {
     const region = data.region?.trim();
     const clima = data.clima?.trim();
 
@@ -53,6 +55,31 @@ export class OrigenService {
     }
 
     const origen = this.origenRepository.create({ region, clima });
+    return this.origenRepository.save(origen);
+  }
+
+  async update(id: number, data: UpdateOrigenDto): Promise<Origen> {
+    const origen = await this.findOne(id);
+    const region =
+      data.region === undefined ? origen.region : data.region?.trim();
+    const clima =
+      data.clima === undefined ? origen.clima : data.clima?.trim();
+
+    if (!region || !clima) {
+      throw new BadRequestException(
+        'Los campos región y clima no pueden estar vacíos.',
+      );
+    }
+
+    const existente = await this.origenRepository.findOneBy({ region, clima });
+    if (existente && existente.id !== id) {
+      throw new ConflictException(
+        `El origen con región ${region} y clima ${clima} ya existe.`,
+      );
+    }
+
+    origen.region = region;
+    origen.clima = clima;
     return this.origenRepository.save(origen);
   }
 
