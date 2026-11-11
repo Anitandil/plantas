@@ -1,4 +1,4 @@
-import { Tamanio } from '../planta.entity';
+import { Clasificacion } from '../planta.entity';
 import { Type } from 'class-transformer';
 import {
   IsEnum,
@@ -17,16 +17,17 @@ export class CreatePlantaDto {
   @IsNotEmpty()
   nombreVulgar: string;
 
-  @IsString()
+  @IsEnum(Clasificacion)
   @IsNotEmpty()
-  clasificacion: string;
-
-  @IsEnum(Tamanio)
-  tamanio: Tamanio;
+  clasificacion: Clasificacion;
 
   @IsOptional()
   @IsString()
   epocaFloracion?: string;
+
+  @IsOptional()
+  @IsString()
+  imagen?: string;
 
   @Type(() => Number)
   @IsInt()

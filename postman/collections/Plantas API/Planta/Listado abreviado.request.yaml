@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/planta?format=short"
+method: GET
+queryParams:
+  format: short
+order: 4292869196938747

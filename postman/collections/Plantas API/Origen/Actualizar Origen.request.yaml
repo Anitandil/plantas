@@ -1,0 +1,12 @@
+$kind: http-request
+url: "{{baseUrl}}/origen/{{origenId}}"
+method: PATCH
+headers:
+  Content-Type: "{{contentType}}"
+body:
+  type: json
+  content: |-
+    {
+      "region": "America del Sur"
+    }
+order: 10000000000000

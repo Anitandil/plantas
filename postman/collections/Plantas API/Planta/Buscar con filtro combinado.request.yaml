@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{baseUrl}}/planta?format=short&clasificacion=Arbol&sortBy=nombreVulgar&order=asc"
+method: GET
+queryParams:
+  format: short
+  clasificacion: Arbol
+  sortBy: nombreVulgar
+  order: asc
+order: 4358718182930565

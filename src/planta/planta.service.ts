@@ -1,12 +1,13 @@
 import {
   BadRequestException,
-  ConflictException,
   forwardRef,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Planta, Tamanio } from './planta.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Brackets, Repository } from 'typeorm';
+import { Planta } from './planta.entity';
 import { OrigenService } from '../origen/origen.service';
 import { CreatePlantaDto } from './dto/create-planta.dto';
 import { UpdatePlantaDto } from './dto/update-planta.dto';
@@ -14,142 +15,132 @@ import { QueryPlantaDto } from './dto/query-planta.dto';
 
 @Injectable()
 export class PlantaService {
-  private readonly plantas: Planta[] = [
-    {
-      id: 1,
-      nombreCientifico: 'Ficus benjamina',
-      nombreVulgar: 'Ficus',
-      clasificacion: 'Arbol',
-      tamanio: Tamanio.MEDIANO,
-      epocaFloracion: 'Todo el año',
-      origenId: 1,
-    },
-    {
-      id: 2,
-      nombreCientifico: 'Monstera deliciosa',
-      nombreVulgar: 'Monstera',
-      clasificacion: 'Planta trepadora',
-      tamanio: Tamanio.GRANDE,
-      epocaFloracion: 'Verano',
-      origenId: 2,
-    },
-    {
-      id: 3,
-      nombreCientifico: 'Aloe vera',
-      nombreVulgar: 'Aloe',
-      clasificacion: 'Suculenta',
-      tamanio: Tamanio.PEQUENIO,
-      epocaFloracion: 'Primavera',
-      origenId: 3,
-    },
-  ];
-  private nextId = 4;
-
   constructor(
+    @InjectRepository(Planta)
+    private plantaRepository: Repository<Planta>,
     @Inject(forwardRef(() => OrigenService))
     private readonly origenService: OrigenService,
   ) {}
 
-  existsByOrigenId(origenId: number): boolean {
-    return this.plantas.some((planta) => planta.origenId === origenId);
+  async existsByOrigenId(origenId: number): Promise<boolean> {
+    const count = await this.plantaRepository.count({ where: { origenId } });
+    return count > 0;
   }
 
-  findAll(query: QueryPlantaDto): string[] {
-    let result = this.plantas;
-    const nombre = query.nombre?.trim().toLowerCase();
+  async findAll(query: QueryPlantaDto) {
+    //query contiene los parametros enviados en la url
+    //ej planta?nombre=ficus&clasificacion=Arbol&page=1&limit=10&format=short&sortBy=nombreCientifico&order=asc
+    const formatData = (data: Planta[]) => {
+      //define el formato de salida
+      if (query.format === 'short') {
+        return data.map(
+          (p) =>
+            `${p.id}: ${p.nombreVulgar} (${p.nombreCientifico}) (${p.clasificacion})`,
+        );
+      }
+      return data;
+    };
 
+    const page = query.page ?? 1; //define valores predeterminados
+    const limit = query.limit ?? 10; //si no se envia page usa1, si no se envia limit usa 10
+    const queryBuilder = this.plantaRepository //crea la conulta con el query builder de TypeORM
+      .createQueryBuilder('planta') //plnat es un lias para la tabla planta
+      .leftJoinAndSelect('planta.origen', 'origen'); //une la tabla origen con la tabla planta y selecciona todos los campos de origen
+
+    const nombre = query.nombre?.trim(); //filtra por nombre si se pide
     if (nombre) {
-      result = result.filter(
-        (p) =>
-          p.nombreCientifico.toLowerCase().includes(nombre) ||
-          p.nombreVulgar.toLowerCase().includes(nombre),
+      //solo si el nombre no esta vacio
+      queryBuilder.andWhere(
+        new Brackets((builder) => {
+          builder
+            .where('LOWER(planta.nombreCientifico) LIKE LOWER(:nombre)', {
+              nombre: `%${nombre}%`,
+            })
+            .orWhere('LOWER(planta.nombreVulgar) LIKE LOWER(:nombre)', {
+              nombre: `%${nombre}%`,
+            });
+        }),
       );
     }
 
-    const clasificacion = query.clasificacion?.trim().toLowerCase();
-
-    if (clasificacion) {
-      result = result.filter(
-        (p) => p.clasificacion.toLowerCase() === clasificacion,
-      );
-    }
-
-    if (query.tamanio) {
-      result = result.filter((p) => p.tamanio === query.tamanio);
-    }
-
-    if (query.sortBy) {
-      const field = query.sortBy;
-      result.sort((a, b) => {
-        if (a[field] < b[field]) return query.order === 'desc' ? 1 : -1;
-        if (a[field] > b[field]) return query.order === 'desc' ? -1 : 1;
-        return 0;
+    if (query.clasificacion) {
+      //filtra x clasificacion
+      queryBuilder.andWhere('planta.clasificacion = :clasificacion', {
+        clasificacion: query.clasificacion,
       });
     }
 
-    if (query.page) {
-      const limit = query.limit ?? result.length;
-      const start = (query.page - 1) * limit;
-      result = result.slice(start, start + limit);
+    const sortableFields: Record<string, string> = {
+      //define los campos ordenables
+      id: 'planta.id',
+      nombreCientifico: 'planta.nombreCientifico',
+      nombreVulgar: 'planta.nombreVulgar',
+      clasificacion: 'planta.clasificacion',
+      epocaFloracion: 'planta.epocaFloracion',
+      origenId: 'planta.origenId',
+    };
+    if (query.sortBy) {
+      queryBuilder.orderBy(
+        sortableFields[query.sortBy],
+        query.order === 'desc' ? 'DESC' : 'ASC',
+      );
     }
 
-    return result.map(
-      (p) => `${p.id}: ${p.nombreVulgar} (${p.nombreCientifico})`,
-    );
+    queryBuilder //crea laconsulta
+      .addOrderBy('planta.id', 'ASC') //agrega orden secundario
+      .skip((page - 1) * limit) //paginacion
+      .take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data: formatData(data),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
-  findOne(id: number): Planta {
-    const planta = this.plantas.find((p) => p.id === id);
+  async findOne(id: number): Promise<Planta> {
+    const planta = await this.plantaRepository.findOne({
+      where: { id },
+      relations: { origen: true },
+    });
     if (!planta) {
       throw new NotFoundException(`La planta con ID ${id} no existe.`);
     }
     return planta;
   }
 
-  create(data: CreatePlantaDto): Planta {
+  async create(data: CreatePlantaDto): Promise<Planta> {
     const nombreCientifico = data.nombreCientifico?.trim();
     const nombreVulgar = data.nombreVulgar?.trim();
-    const clasificacion = data.clasificacion?.trim();
 
-    if (!nombreCientifico || !nombreVulgar || !clasificacion) {
+    if (!nombreCientifico || !nombreVulgar) {
       throw new BadRequestException(
-        'Los campos nombre científico, nombre vulgar y clasificación no pueden estar vacíos.',
+        'Los campos nombre científico y nombre vulgar no pueden estar vacíos.',
       );
     }
 
-    if (
-      this.plantas.some(
-        (planta) => planta.nombreCientifico === nombreCientifico,
-      )
-    ) {
-      throw new ConflictException(
-        `La planta con nombre científico ${nombreCientifico} ya existe.`,
-      );
-    }
+    await this.origenService.findOne(data.origenId);
 
-    if (!Object.values(Tamanio).includes(data.tamanio)) {
-      throw new BadRequestException('El tamaño no es válido.');
-    }
-
-    this.origenService.findOne(data.origenId);
-    const planta: Planta = {
-      id: this.nextId++,
+    const planta = this.plantaRepository.create({
       nombreCientifico,
       nombreVulgar,
-      clasificacion,
-      tamanio: data.tamanio,
+      clasificacion: data.clasificacion,
       epocaFloracion: data.epocaFloracion?.trim() || undefined,
+      imagen: data.imagen,
       origenId: data.origenId,
-    };
-    this.plantas.push(planta);
-    return planta;
+    });
+    return this.plantaRepository.save(planta);
   }
 
-  update(id: number, data: UpdatePlantaDto): Planta {
-    const planta = this.findOne(id);
+  async update(id: number, data: UpdatePlantaDto): Promise<Planta> {
+    const planta = await this.findOne(id);
 
     if (data.origenId !== undefined) {
-      this.origenService.findOne(data.origenId);
+      await this.origenService.findOne(data.origenId);
       planta.origenId = data.origenId;
     }
 
@@ -172,34 +163,23 @@ export class PlantaService {
     }
 
     if (data.clasificacion !== undefined) {
-      const clasificacion = data.clasificacion.trim();
-      if (!clasificacion) {
-        throw new BadRequestException('La clasificación no puede estar vacía.');
-      }
-      planta.clasificacion = clasificacion;
-    }
-
-    if (data.tamanio !== undefined) {
-      if (!Object.values(Tamanio).includes(data.tamanio)) {
-        throw new BadRequestException('El tamaño no es válido.');
-      }
-      planta.tamanio = data.tamanio;
+      planta.clasificacion = data.clasificacion;
     }
 
     if (data.epocaFloracion !== undefined) {
       planta.epocaFloracion = data.epocaFloracion.trim() || undefined;
     }
 
-    return planta;
+    if (data.imagen !== undefined) {
+      planta.imagen = data.imagen;
+    }
+
+    return this.plantaRepository.save(planta);
   }
 
-  remove(id: number): { message: string; planta: Planta } {
-    const index = this.plantas.findIndex((p) => p.id === id);
-    if (index === -1) {
-      throw new NotFoundException(`La planta con ID ${id} no existe.`);
-    }
-    const planta = this.plantas[index];
-    this.plantas.splice(index, 1);
+  async remove(id: number): Promise<{ message: string; planta: Planta }> {
+    const planta = await this.findOne(id);
+    await this.plantaRepository.delete(id);
     return {
       message: `La planta con ID ${id} fue eliminada correctamente.`,
       planta,

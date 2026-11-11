@@ -34,7 +34,7 @@ La aplicación correrá en: `http://localhost:3000`
 
 ### 3. Verificar que todo funciona
 Abrir en el navegador o Postman:
-- `GET http://localhost:3000/origen` → Debería traer 2 orígenes
+- `GET http://localhost:3000/origen` → Debería listar los orígenes registrados
 - `GET http://localhost:3000/planta` → Debería traer las plantas registradas
 
 ---
@@ -47,6 +47,7 @@ Abrir en el navegador o Postman:
 | `GET` | `/origen` | Listar todos los orígenes |
 | `GET` | `/origen/:id` | Buscar un origen por ID |
 | `POST` | `/origen` | Crear un nuevo origen |
+| `PATCH` | `/origen/:id` | Actualizar región, clima o ambos |
 | `DELETE` | `/origen/:id` | Eliminar un origen (con protección si tiene plantas) |
 
 **Ejemplo POST:**
@@ -57,7 +58,8 @@ Abrir en el navegador o Postman:
 }
 ```
 
-### 
+### Endpoints Planta (`/planta`)
+
 | Método | Ruta | Descripción |
 |---|---|---|
 | `GET` | `/planta` | Listar todas las plantas (con filtros) |
@@ -79,12 +81,54 @@ Abrir en el navegador o Postman:
 
 ### Filtros disponibles en `GET /planta`:
 - `?clasificacion=Arbol` - Filtrar por clasificación
-- `?nombre=ficus` - Filtrar por nombre (científico o vulgar)
-- `?region=Patagonia` - Filtrar por región del origen
-- `?clima=Templado` - Filtrar por clima del origen
-- `?page=1&limit=10` - Paginación
-- `?sortBy=nombreVulgar&order=asc` - Ordenamiento
-- `?format=short` - Vista resumida (`1: Nombre (Cientifico)`)
+- `?nombre=ficus` - Filtrar por nombre científico o vulgar
+- `?page=1&limit=10` - Paginar resultados
+- `?sortBy=nombreVulgar&order=asc` - Ordenar por un campo permitido
+- `?format=short` - Vista resumida (`1: Nombre (Cientifico)`); `full` devuelve los objetos completos
+
+---
+
+## ✅ Validaciones: tipos y ubicación
+
+Las validaciones están implementadas principalmente con **class-validator** en los DTO. Se activan globalmente desde `src/main.ts`, por lo que se aplican a los cuerpos y parámetros de consulta que reciben los controladores.
+
+### Configuración global — `src/main.ts`
+
+`ValidationPipe` usa estas opciones:
+
+- `whitelist: true`: considera únicamente propiedades declaradas en el DTO.
+- `forbidNonWhitelisted: true`: devuelve `400 Bad Request` si se envía una propiedad no declarada.
+- `transform: true`: transforma los valores de entrada a los tipos declarados cuando existe la configuración correspondiente, por ejemplo, convertir `page` y `limit` a números.
+
+### Validación de los cuerpos (body)
+
+| DTO y ubicación | Validaciones | Uso |
+|---|---|---|
+| `src/origen/dto/create-origen.dto.ts` — `CreateOrigenDto` | `@IsString()` y `@IsNotEmpty()` en `region` y `clima` | `POST /origen` |
+| `src/origen/dto/update-origen.dto.ts` — `UpdateOrigenDto` | Hereda las validaciones de `CreateOrigenDto` y vuelve opcionales sus campos mediante `PartialType` | `PATCH /origen/:id`; permite enviar `region`, `clima` o ambos |
+| `src/planta/dto/create-planta.dto.ts` — `CreatePlantaDto` | `@IsString()` y `@IsNotEmpty()` en los nombres; `@IsEnum()` en `clasificacion`; `@IsOptional()` y `@IsString()` en `epocaFloracion`; `@Type(() => Number)` y `@IsInt()` en `origenId` | `POST /planta` |
+| `src/planta/dto/update-planta.dto.ts` — `UpdatePlantaDto` | Hereda las validaciones de `CreatePlantaDto` y vuelve opcionales sus campos mediante `PartialType` | `PATCH /planta/:id` |
+
+### Validación de parámetros de consulta — `src/planta/dto/query-planta.dto.ts`
+
+`QueryPlantaDto`, recibido en `GET /planta`, valida las opciones de búsqueda:
+
+- `nombre`: texto opcional.
+- `clasificacion`: valor del enum `Clasificacion`.
+- `sortBy`: uno de los campos permitidos para ordenar.
+- `order`: `asc` o `desc`.
+- `page` y `limit`: enteros mayores o iguales a 1; se convierten a número con `@Type(() => Number)`.
+- `format`: `short` o `full`.
+
+Cada una es opcional (`@IsOptional()`), así que se pueden combinar únicamente las opciones necesarias. Este DTO es solo para consultar plantas; no se usa para actualizar orígenes.
+
+### Validaciones adicionales en controladores y servicios
+
+- `src/origen/origen.controller.ts` y `src/planta/planta.controller.ts`: `ParseIntPipe` valida que los parámetros `:id` de las rutas sean números enteros. Un ID inválido produce `400 Bad Request`.
+- `src/origen/origen.service.ts`: al crear o actualizar, recorta espacios y rechaza región o clima vacíos (`400`). También impide duplicar la combinación de región y clima (`409`). Un ID inexistente produce `404`; no permite eliminar un origen asociado a plantas (`409`).
+- `src/planta/planta.service.ts`: al crear o actualizar, rechaza nombres vacíos (`400`), verifica que el origen indicado exista y devuelve `404` si la planta buscada no existe.
+
+> Las reglas de DTO validan el tipo y la presencia de los datos. Las comprobaciones que dependen de la base de datos —por ejemplo, si un origen existe o si la combinación ya está registrada— se realizan en los servicios.
 
 ---
 
@@ -136,43 +180,7 @@ git commit -m "Entrega TP - Backend NestJS con TypeORM"
 git push origin main
 ```
 
----
-
-## 📦 ¿Qué NO está incluido (y por qué)?
-
-- ❌ **Datos de prueba masivos** - Los datos se cargan al primer run o se pueden agregar manualmente por Postman
-- ❌ **Archivo `.env` en Git** - Está en `.gitignore` por seguridad (usar las credenciales por defecto o las propias)
-- ❌ **Docker Desktop siempre corriendo** - Solo necesario para la BD, el código funciona una vez compilado
-
----
-
-## 📋 Checklist de verificación final
-
-Antes de entregar, verificar que:
-- [ ] `npm run build` pasa sin errores
-- [ ] `npm run start:dev` levanta la app y conecta a la BD
-- [ ] Los endpoints principales funcionan en Postman/Thunder Client
-- [ ] La colección Postman está subida al repositorio
-- [ ] El historial de commits muestra el progreso del trabajo
-- [ ] El archivo `.env` no está en el historial de Git (ya está en `.gitignore`)
-
----
-
-## 📞 Dudas frecuentes
-
-**¿Si formateo la PC pierdo los datos?**
-No, los datos están en la base de datos Docker, no en el código. Solo hay que levantar `docker-compose up -d` nuevamente.
-
-**¿Si formateo la PC pierdo el código?**
-No, el código está en GitHub. Solo hay hacer `git clone` y volver a `npm install` y `npm run start:dev`.
 
 **¿Necesito volver a migrar la BD si cambio algo en los entities?**
 Con `synchronize: true` en `app.module.ts`, TypeORM actualiza automáticamente el schema. Pero en producción se recomienda usar migraciones (`npm run typeorm migration:run`).
 
----
----
-
-**📌 Nota final:** Este README sirve como guía de uso y presentación del proyecto. El profesor lo revisará junto con el historial de commits y la colección Postman para evaluar el entregable.
-
----
-*Historial generado el [fecha] para la entrega TP - Tecnologías Web (TUARI)*
