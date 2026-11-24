@@ -16,16 +16,26 @@ import { Planta } from './planta/planta.entity';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get('DB_HOST'),
-        port: config.get<number>('DB_PORT'),
-        username: config.get('DB_USERNAME'),
-        password: config.get('DB_PASSWORD'),
-        database: config.get('DB_DATABASE'),
-        entities: [Origen, Planta],
-        synchronize: true,
-      }),
+      useFactory: (config: ConfigService) => {
+        const databaseUrl = config.get<string>('DATABASE_URL');
+        const useSsl = config.get<string>('DB_SSL') === 'true';
+
+        return {
+          type: 'postgres',
+          ...(databaseUrl
+            ? { url: databaseUrl }
+            : {
+                host: config.get<string>('DB_HOST'),
+                port: Number(config.get<string>('DB_PORT') ?? 5432),
+                username: config.get<string>('DB_USERNAME'),
+                password: config.get<string>('DB_PASSWORD'),
+                database: config.get<string>('DB_DATABASE'),
+              }),
+          ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
+          entities: [Origen, Planta],
+          synchronize: true,
+        };
+      },
     }),
     OrigenModule,
     PlantaModule,

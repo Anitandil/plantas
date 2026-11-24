@@ -21,9 +21,9 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+## API de Plantas
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+API REST para administrar plantas y sus origenes, construida con NestJS y PostgreSQL.
 
 ## Project setup
 
@@ -57,18 +57,22 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
-## Deployment
+## Deploy del backend en Render
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+El archivo `render.yaml` configura el servicio web. Antes de desplegar:
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+1. Crea una base de datos PostgreSQL en Render, idealmente en la misma region que el servicio.
+2. Despliega este repositorio como Blueprint y configura `DATABASE_URL` con la URL interna de esa base de datos.
+3. Si la base de datos requiere TLS (por ejemplo, una URL externa), configura `DB_SSL=true`; para la URL interna de Render, usa `false`.
+4. Cuando tengas la URL publica del frontend, configura `CORS_ORIGIN` con su origen exacto, por ejemplo `https://mi-sitio.netlify.app`. Se aceptan varios origenes separados por comas.
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+Render asigna `PORT` automaticamente. El endpoint `GET /health` se usa para comprobar que la API esta disponible.
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+La configuracion local tambien admite `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` y `DB_DATABASE`. No subas el archivo `.env` ni incluyas credenciales en el repositorio.
+
+## Frontend en Netlify
+
+El frontend no esta incluido en este repositorio. Al desplegar su repositorio en Netlify, configura la variable de entorno que use ese frontend para apuntar a la URL publica de esta API y agrega el dominio de Netlify a `CORS_ORIGIN` en Render.
 
 ## Resources
 

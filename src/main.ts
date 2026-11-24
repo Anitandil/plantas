@@ -12,9 +12,17 @@ async function bootstrap() {
       transform: true, //transforma automáticamente los tipos de datos de las propiedades según lo definido en los DTOs.
     }),
   );
-  app.enableCors();//sin esto el navegador bloquea la respuesta porque angular corre en localhost:4200 Y el backend en 3000
-  await app.listen(process.env.PORT ?? 3000);
+  const corsOrigins = process.env.CORS_ORIGIN?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  app.enableCors({
+    origin: corsOrigins?.length ? corsOrigins : true,
+  });
+  await app.listen(Number(process.env.PORT ?? 3000), '0.0.0.0');
   //si no se especifica un puerto en las variables de entorno, se usará el puerto 3000 por defecto.
 }
-bootstrap().catch((err) => console.error(err));
+bootstrap().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
 //si nest no pudo iniciar la aplicación, se captura el error y se imprime en la consola.

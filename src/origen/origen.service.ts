@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { Origen } from './origen.entity';
 import { PlantaService } from '../planta/planta.service';
 import { CreateOrigenDto } from './dto/create-origen.dto';
@@ -21,6 +21,12 @@ export class OrigenService {
     @Inject(forwardRef(() => PlantaService))
     private readonly plantaService: PlantaService,
   ) {}
+
+  private isDuplicateError(error: unknown): boolean {
+    if (!(error instanceof QueryFailedError)) return false;
+    const driverError = error.driverError as { code?: string };
+    return driverError.code === '23505';
+  }
 
   findAll(): Promise<Origen[]> {
     return this.origenRepository.find();
@@ -55,7 +61,16 @@ export class OrigenService {
     }
 
     const origen = this.origenRepository.create({ region, clima });
-    return this.origenRepository.save(origen);
+    try {
+      return await this.origenRepository.save(origen);
+    } catch (error) {
+      if (this.isDuplicateError(error)) {
+        throw new ConflictException(
+          `El origen con región ${region} y clima ${clima} ya existe.`,
+        );
+      }
+      throw error;
+    }
   }
 
   async update(id: number, data: UpdateOrigenDto): Promise<Origen> {
@@ -79,7 +94,16 @@ export class OrigenService {
 
     origen.region = region;
     origen.clima = clima;
-    return this.origenRepository.save(origen);
+    try {
+      return await this.origenRepository.save(origen);
+    } catch (error) {
+      if (this.isDuplicateError(error)) {
+        throw new ConflictException(
+          `El origen con región ${region} y clima ${clima} ya existe.`,
+        );
+      }
+      throw error;
+    }
   }
 
   async findOrCreate(region: string, clima: string): Promise<Origen> {
