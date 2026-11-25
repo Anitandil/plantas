@@ -16,7 +16,7 @@ async function bootstrap() {
     .map((origin) => origin.trim())
     .filter(Boolean);
   app.enableCors({
-  origin: 'https://beautiful-maamoul-fa7a42.netlify.app',
+  origin: 'https://plantas-frontend.netlify.app',
 });
   await app.listen(Number(process.env.PORT ?? 3000), '0.0.0.0');
   //si no se especifica un puerto en las variables de entorno, se usará el puerto 3000 por defecto.
