@@ -1,12 +1,13 @@
 import {
   BadRequestException,
+  ConflictException,
   forwardRef,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, Repository } from 'typeorm';
+import { Brackets, QueryFailedError, Repository } from 'typeorm';
 import { Planta } from './planta.entity';
 import { OrigenService } from '../origen/origen.service';
 import { CreatePlantaDto } from './dto/create-planta.dto';
@@ -21,6 +22,24 @@ export class PlantaService {
     @Inject(forwardRef(() => OrigenService))
     private readonly origenService: OrigenService,
   ) {}
+
+  private isDuplicateScientificNameError(error: unknown): boolean {
+    if (!(error instanceof QueryFailedError)) return false;
+    const driverError = error.driverError as {
+      code?: string;
+      constraint?: string;
+    };
+    return (
+      driverError.code === '23505' &&
+      driverError.constraint === 'UQ_planta_nombre_cientifico'
+    );
+  }
+
+  private duplicateScientificName(name: string): ConflictException {
+    return new ConflictException(
+      `La planta con nombre científico ${name} ya existe.`,
+    );
+  }
 
   async existsByOrigenId(origenId: number): Promise<boolean> {
     const count = await this.plantaRepository.count({ where: { origenId } });
@@ -123,6 +142,13 @@ export class PlantaService {
       );
     }
 
+    const existente = await this.plantaRepository.findOneBy({
+      nombreCientifico,
+    });
+    if (existente) {
+      throw this.duplicateScientificName(nombreCientifico);
+    }
+
     await this.origenService.findOne(data.origenId);
 
     const planta = this.plantaRepository.create({
@@ -133,7 +159,14 @@ export class PlantaService {
       imagen: data.imagen,
       origenId: data.origenId,
     });
-    return this.plantaRepository.save(planta);
+    try {
+      return await this.plantaRepository.save(planta);
+    } catch (error) {
+      if (this.isDuplicateScientificNameError(error)) {
+        throw this.duplicateScientificName(nombreCientifico);
+      }
+      throw error;
+    }
   }
 
   async update(id: number, data: UpdatePlantaDto): Promise<Planta> {
@@ -151,6 +184,14 @@ export class PlantaService {
           'El nombre científico no puede estar vacío.',
         );
       }
+
+      const existente = await this.plantaRepository.findOneBy({
+        nombreCientifico,
+      });
+      if (existente && existente.id !== id) {
+        throw this.duplicateScientificName(nombreCientifico);
+      }
+
       planta.nombreCientifico = nombreCientifico;
     }
 
@@ -174,7 +215,14 @@ export class PlantaService {
       planta.imagen = data.imagen;
     }
 
-    return this.plantaRepository.save(planta);
+    try {
+      return await this.plantaRepository.save(planta);
+    } catch (error) {
+      if (this.isDuplicateScientificNameError(error)) {
+        throw this.duplicateScientificName(planta.nombreCientifico);
+      }
+      throw error;
+    }
   }
 
   async remove(id: number): Promise<{ message: string; planta: Planta }> {

@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
+  Unique,
 } from 'typeorm';
 import { Origen } from '../origen/origen.entity';
 
@@ -15,6 +16,7 @@ export enum Clasificacion {
 }
 
 @Entity()
+@Unique('UQ_planta_nombre_cientifico', ['nombreCientifico'])
 export class Planta {
   @PrimaryGeneratedColumn()
   id!: number;

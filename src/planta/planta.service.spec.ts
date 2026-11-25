@@ -1,60 +1,108 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { PlantaService } from './planta.service';
+jest.mock('@nestjs/typeorm', () => ({
+  InjectRepository: () => () => {},
+}));
+
+import { ConflictException } from '@nestjs/common';
+import { QueryFailedError, Repository } from 'typeorm';
 import { OrigenService } from '../origen/origen.service';
+import { CreatePlantaDto } from './dto/create-planta.dto';
+import { Planta, Clasificacion } from './planta.entity';
+import { PlantaService } from './planta.service';
 
 describe('PlantaService', () => {
   let service: PlantaService;
+  let repository: {
+    findOneBy: jest.Mock;
+    create: jest.Mock;
+    save: jest.Mock;
+    findOne: jest.Mock;
+  };
+  let origenService: { findOne: jest.Mock };
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        PlantaService,
-        { provide: OrigenService, useValue: { findOne: jest.fn() } },
-      ],
-    }).compile();
+  beforeEach(() => {
+    repository = {
+      findOneBy: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      findOne: jest.fn(),
+    };
+    origenService = { findOne: jest.fn() };
 
-    service = module.get<PlantaService>(PlantaService);
+    service = new PlantaService(
+      repository as unknown as Repository<Planta>,
+      origenService as unknown as OrigenService,
+    );
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
-
-  it('should remove a plant and return its details', () => {
-    expect(service.remove(1)).toEqual({
-      message: 'La planta con ID 1 fue eliminada correctamente.',
-      planta: {
-        id: 1,
-        nombreCientifico: 'Ficus benjamina',
-        nombreVulgar: 'Ficus',
-        clasificacion: 'Arbol',
-        epocaFloracion: 'Todo el año',
-        origenId: 1,
-      },
+  it('rejects a plant with an existing scientific name', async () => {
+    repository.findOneBy.mockResolvedValue({
+      id: 1,
+      nombreCientifico: 'Ficus benjamina',
     });
-    expect(() => service.findOne(1)).toThrow();
-  });
 
-  it('should reject a duplicate scientific name', () => {
-    expect(() =>
+    await expect(
       service.create({
-        nombreCientifico: 'Ficus benjamina',
+        nombreCientifico: ' Ficus benjamina ',
         nombreVulgar: 'Ficus nuevo',
-        clasificacion: 'Arbol',
+        clasificacion: Clasificacion.ARBOL,
         origenId: 1,
       }),
-    ).toThrow('La planta con nombre científico Ficus benjamina ya existe.');
+    ).rejects.toThrow(
+      new ConflictException(
+        'La planta con nombre científico Ficus benjamina ya existe.',
+      ),
+    );
+    expect(repository.save).not.toHaveBeenCalled();
   });
 
-  it('should find plants by a partial name without case sensitivity', () => {
-    expect(service.findAll({ nombre: 'ficus' })).toEqual([
-      '1: Ficus (Ficus benjamina)',
-    ]);
+  it('rejects changing a plant to another plant’s scientific name', async () => {
+    repository.findOne.mockResolvedValue({ id: 1 });
+    repository.findOneBy.mockResolvedValue({
+      id: 2,
+      nombreCientifico: 'Ficus benjamina',
+    });
+
+    await expect(
+      service.update(1, { nombreCientifico: 'Ficus benjamina' }),
+    ).rejects.toThrow(ConflictException);
+    expect(repository.save).not.toHaveBeenCalled();
   });
 
-  it('should filter by classification without case sensitivity', () => {
-    expect(service.findAll({ clasificacion: 'arbol' })).toEqual([
-      '1: Ficus (Ficus benjamina)',
-    ]);
+  it('allows saving the same scientific name on the same plant', async () => {
+    const planta = {
+      id: 1,
+      nombreCientifico: 'Ficus benjamina',
+    } as Planta;
+    repository.findOne.mockResolvedValue(planta);
+    repository.findOneBy.mockResolvedValue(planta);
+    repository.save.mockResolvedValue(planta);
+
+    await expect(
+      service.update(1, { nombreCientifico: ' Ficus benjamina ' }),
+    ).resolves.toBe(planta);
+    expect(repository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ nombreCientifico: 'Ficus benjamina' }),
+    );
+  });
+
+  it('turns the database unique constraint into a conflict response', async () => {
+    repository.findOneBy.mockResolvedValue(null);
+    origenService.findOne.mockResolvedValue({ id: 1 });
+    repository.create.mockReturnValue({});
+    repository.save.mockRejectedValue(
+      new QueryFailedError('INSERT', [], {
+        code: '23505',
+        constraint: 'UQ_planta_nombre_cientifico',
+      }),
+    );
+
+    const planta: CreatePlantaDto = {
+      nombreCientifico: 'Ficus benjamina',
+      nombreVulgar: 'Ficus',
+      clasificacion: Clasificacion.ARBOL,
+      origenId: 1,
+    };
+
+    await expect(service.create(planta)).rejects.toThrow(ConflictException);
   });
 });
