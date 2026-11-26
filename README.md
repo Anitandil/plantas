@@ -62,13 +62,13 @@ $ npm run test:cov
 El archivo `render.yaml` configura el servicio web. Antes de desplegar:
 
 1. Crea una base de datos PostgreSQL en Render, idealmente en la misma region que el servicio.
-2. Despliega este repositorio como Blueprint y configura `DATABASE_URL` con la URL interna de esa base de datos.
-3. Si la base de datos requiere TLS (por ejemplo, una URL externa), configura `DB_SSL=true`; para la URL interna de Render, usa `false`.
+2. Despliega este repositorio como Blueprint. Render no carga el `.env` de tu computadora: configura `DATABASE_URL` con la URL interna que muestra la base de datos de Render. No uses la URL ni las credenciales de tu base local.
+3. Para la conexion interna de Render, deja `DB_SSL=false`. Si usas un host externo que requiere TLS, configura `DB_SSL=true`.
 4. Cuando tengas la URL publica del frontend, configura `CORS_ORIGIN` con su origen exacto, por ejemplo `https://mi-sitio.netlify.app`. Se aceptan varios origenes separados por comas.
 
 Render asigna `PORT` automaticamente. El endpoint `GET /health` se usa para comprobar que la API esta disponible.
 
-La configuracion local tambien admite `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` y `DB_DATABASE`. No subas el archivo `.env` ni incluyas credenciales en el repositorio.
+La configuracion local tambien admite `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` y `DB_DATABASE`. No subas el archivo `.env` ni incluyas credenciales en el repositorio. El valor `DATABASE_URL`, marcado como `sync: false` en `render.yaml`, se completa en Render y no se guarda en GitHub.
 
 ## Frontend en Netlify
 

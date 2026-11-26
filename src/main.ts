@@ -12,12 +12,16 @@ async function bootstrap() {
       transform: true, //transforma automáticamente los tipos de datos de las propiedades según lo definido en los DTOs.
     }),
   );
-  const corsOrigins = process.env.CORS_ORIGIN?.split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  const corsOrigins = [
+    'https://plantas-frontend.netlify.app',
+    'http://localhost:4200',
+    ...(process.env.CORS_ORIGIN?.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean) ?? []),
+  ];
   app.enableCors({
-  origin: 'https://plantas-frontend.netlify.app',
-});
+    origin: corsOrigins,
+  });
   await app.listen(Number(process.env.PORT ?? 3000), '0.0.0.0');
   //si no se especifica un puerto en las variables de entorno, se usará el puerto 3000 por defecto.
 }
